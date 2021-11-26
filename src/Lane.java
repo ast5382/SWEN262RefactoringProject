@@ -426,113 +426,110 @@ public class Lane extends Thread implements PinsetterObserver {
 	 * 
 	 * @param Cur		The bowler that is currently up
 	 * @param frame	The frame the current bowler is on
-	 * 
-	 * @return			The bowlers total score
 	 */
-	private int getScore( Bowler Cur, int frame) {
+	private void getScore( Bowler Cur, int frame) {
 		int[] curScore;
-		int strikeballs = 0;
-		int totalScore = 0;
+
+		// Get all scores that the bowler has made so far
 		curScore = (int[]) scores.get(Cur);
-		for (int i = 0; i != 10; i++){
+
+		// Reset the scores for each of the 10 frames
+		for (int i = 0; i < 10; i++){
 			cumulScores[bowlIndex][i] = 0;
 		}
-		int current = 2*(frame - 1)+ball-1;
-		//Iterate through each ball until the current one.
-		for (int i = 0; i != current+2; i++){
-			//Spare:
-			if( i%2 == 1 && curScore[i - 1] + curScore[i] == 10 && i < current - 1 && i < 19){
-				//This ball was a the second of a spare.  
-				//Also, we're not on the current ball.
-				//Add the next ball to the ith one in cumul.
-				cumulScores[bowlIndex][(i/2)] += curScore[i+1] + curScore[i]; 
-				if (i > 1) {
-					//cumulScores[bowlIndex][i/2] += cumulScores[bowlIndex][i/2 -1];
-				}
-			} else if( i < current && i%2 == 0 && curScore[i] == 10  && i < 18){
-				strikeballs = 0;
-				//This ball is the first ball, and was a strike.
-				//If we can get 2 balls after it, good add them to cumul.
-				if (curScore[i+2] != -1) {
-					strikeballs = 1;
-					if(curScore[i+3] != -1) {
-						//Still got em.
-						strikeballs = 2;
-					} else if(curScore[i+4] != -1) {
-						//Ok, got it.
-						strikeballs = 2;
-					}
-				}
-				if (strikeballs == 2){
-					//Add up the strike.
-					//Add the next two balls to the current cumulscore.
-					cumulScores[bowlIndex][i/2] += 10;
-					if(curScore[i+1] != -1) {
-						cumulScores[bowlIndex][i/2] += curScore[i+1] + cumulScores[bowlIndex][(i/2)-1];
-						if (curScore[i+2] != -1){
-							if( curScore[i+2] != -2){
-								cumulScores[bowlIndex][(i/2)] += curScore[i+2];
-							}
-						} else {
-							if( curScore[i+3] != -2){
-								cumulScores[bowlIndex][(i/2)] += curScore[i+3];
-							}
-						}
-					} else {
-						if ( i/2 > 0 ){
-							cumulScores[bowlIndex][i/2] += curScore[i+2] + cumulScores[bowlIndex][(i/2)-1];
-						} else {
-							cumulScores[bowlIndex][i/2] += curScore[i+2];
-						}
-						if (curScore[i+3] != -1){
-							if( curScore[i+3] != -2){
-								cumulScores[bowlIndex][(i/2)] += curScore[i+3];
-							}
-						} else {
-							cumulScores[bowlIndex][(i/2)] += curScore[i+4];
-						}
-					}
-				} else {
-					break;
-				}
-			}else { 
-				//We're dealing with a normal throw, add it and be on our way.
-				if( i%2 == 0 && i < 18){
-					if ( i/2 == 0 ) {
-						//First frame, first ball.  Set his cumul score to the first ball
-						if(curScore[i] != -2){	
-							cumulScores[bowlIndex][i/2] += curScore[i];
-						}
-					} else if (i/2 != 9){
-						//add his last frame's cumul to this ball, make it this frame's cumul.
-						if(curScore[i] != -2){
-							cumulScores[bowlIndex][i/2] += cumulScores[bowlIndex][i/2 - 1] + curScore[i];
-						} else {
-							cumulScores[bowlIndex][i/2] += cumulScores[bowlIndex][i/2 - 1];
-						}	
-					}
-				} else if (i < 18){ 
-					if(curScore[i] != -1 && i > 2){
-						if(curScore[i] != -2){
-							cumulScores[bowlIndex][i/2] += curScore[i];
-						}
-					}
-				}
-				if (i/2 == 9){
-					if (i == 18){
-						cumulScores[bowlIndex][9] += cumulScores[bowlIndex][8];	
-					}
-					if(curScore[i] != -2){
-						cumulScores[bowlIndex][9] += curScore[i];
-					}
-				} else if (i/2 == 10) {
-					if(curScore[i] != -2){
-						cumulScores[bowlIndex][9] += curScore[i];
-					}
-				}
+
+		// Calculate the cumulative score for each frame
+		for (int frameIndex = 0; frameIndex < 10; frameIndex++) {
+			// If the first ball of this frame is -1, no more throws
+			// have been made; all following scores are 0, leave the for-loop early
+			if(curScore[frameIndex * 2] == -1)
+				break;
+
+			// Get a reference to the first throw of this frame
+			// and the next two throws afterwards
+			int[] nextThreeThrows = getThreeBallScores(curScore, frameIndex);
+			int frameScore = calcFrameValue(nextThreeThrows);
+
+			// Add the previous frame's score to this frame's points, unless it's frame 1
+			if(frameIndex > 0)
+				cumulScores[bowlIndex][frameIndex] = cumulScores[bowlIndex][frameIndex - 1] + frameScore;
+			else
+				cumulScores[bowlIndex][0] = frameScore;
+		}
+	}
+
+	/** calcFrameValue()
+	 *
+	 * Given 3 throws, calculate the points earned in a single frame.
+	 *
+	 * @param nextThreeThrows int[3] of the scores for the first throw of a frame
+	 *                        and the two throws following it
+	 * @return Points earned in that frame
+	 */
+	private int calcFrameValue(int nextThreeThrows[]) {
+		// Unpack the data structure into more identifiable names
+		int firstBallPins = nextThreeThrows[0];
+		int secondBallPins = nextThreeThrows[1];
+		int thirdBallPins = nextThreeThrows[2];
+
+		// No ball has been thrown yet, return early
+		if(firstBallPins == -1)
+			return 0;
+
+		// If the second ball hasn't been thrown yet,
+		// just return the first ball's value for now
+		if(secondBallPins == -1)
+			return firstBallPins;
+
+		// If the third ball hasn't been thrown yet,
+		// just return the first two throws for now
+		if(thirdBallPins == -1)
+			return firstBallPins + secondBallPins;
+
+		// Strike!
+		if(firstBallPins == 10) {
+			// Already verified above that all 3 balls have been thrown
+			// Return strike points: 10 + next two throws
+			return 10 + secondBallPins + thirdBallPins;
+		}
+		// Spare
+		else if(firstBallPins + secondBallPins == 10) {
+			// Same functionality as strike code,
+			// but logic split up for easier readability
+			return 10 + thirdBallPins;
+		}
+
+		// Not a strike or spare, return only first + second values
+		return firstBallPins + secondBallPins;
+	}
+
+	/** getThreeBallScores()
+	 *
+	 * Given a score set and index to a particular frame,
+	 * return an array of the first throw on frame n and the following 2 throws.
+	 * This simplifies the logic of skipping due to strikes.
+	 * (e.g. [10, -1, 3, 4, ...] -> [10, 3, 4])
+	 *
+	 * @param curScore integer array of all 21 throws for a given bowler
+	 * @param frameIndex Index of the frames to return scores for (0-9, not 1-10)
+	 * @return int[3] of the scores for the first throw of a frame
+	 * and the two throws following it, with -1 for non-thrown balls
+	 */
+	private int[] getThreeBallScores(int[] curScore, int frameIndex) {
+		// Initialize all values to -1, which represents a ball not thrown
+		int[] points = {-1, -1, -1};
+		int ballCount = 0;
+
+		// Get up to 3 point values that aren't -1
+		for(int i = frameIndex * 2; i < curScore.length && ballCount < 3; i++) {
+			// This ball has been thrown; count its point value
+			if(curScore[i] != -1) {
+				points[ballCount] = curScore[i];
+				ballCount++;
 			}
 		}
-		return totalScore;
+
+		return points;
 	}
 
 	/** isPartyAssigned()
