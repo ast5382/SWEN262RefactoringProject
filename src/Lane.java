@@ -196,54 +196,59 @@ public class Lane extends Thread implements PinsetterObserver {
 				// If a maintenance call has been made,
 				// idle until the lane is no longer paused
 				while (gameIsHalted) {
-					try {
-						sleep(10);
-					} catch (Exception e) {}
+					shortIdle();
 				}
 
 				// Keep on iterating over each bowler for this frame
 				if (bowlerIterator.hasNext()) {
-					currentThrower = (Bowler)bowlerIterator.next();
-
-					canThrowAgain = true;
-					tenthFrameStrike = false;
-					ball = 0;
-					while (canThrowAgain) {
-						setter.ballThrown();		// simulate the thrower's ball hiting
-						ball++;
-					}
-
-					// If it's the last frame, save the final result for the bowler
-					if (frameNumber == 9){
-						finalizeScore(bowlIndex, gameNumber);
-					}
-
-					// Reset the pins for the next bowler
-					setter.reset();
-					bowlIndex++;
-
+					bowlNextFrame();
 				}
 				// All bowlers have played for this frame; reset for the next frame
 				else {
 					nextFrame();
 				}
 			} else if (partyAssigned && gameFinished) {
-				// The game has finished; prompt if the bowlers wish to play again
-				int result = endGamePrompt();
-				
-				// TODO: send record of scores to control desk
-				if (result == 1) {					// yes, want to play again
-					playAgain();
-				} else if (result == 2) {// no, dont want to play another game
-					endLane();
-				}
+				gameOver();
 			}
 			
-			
-			try {
-				sleep(10);
-			} catch (Exception e) {}
+			// Idle once per loop to free up resources on this thread
+			shortIdle();
 		}
+	}
+
+	/** shortIdle()
+	 *
+	 * Pause this lane's Thread for a short duration (10 milliseconds)
+	 */
+	private void shortIdle() {
+		try {
+			sleep(10);
+		} catch (Exception e) {}
+	}
+
+	/** bowlNextFrame()
+	 *
+	 * Bowl out the next frame for the next bowler
+	 */
+	private void bowlNextFrame() {
+		currentThrower = (Bowler)bowlerIterator.next();
+
+		canThrowAgain = true;
+		tenthFrameStrike = false;
+		ball = 0;
+		while (canThrowAgain) {
+			setter.ballThrown();		// simulate the thrower's ball hitting
+			ball++;
+		}
+
+		// If it's the last frame, save the final result for the bowler
+		if (frameNumber == 9){
+			finalizeScore(bowlIndex, gameNumber);
+		}
+
+		// Reset the pins for the next bowler
+		setter.reset();
+		bowlIndex++;
 	}
 
 	/** nextFrame()
@@ -276,6 +281,23 @@ public class Lane extends Thread implements PinsetterObserver {
 			String dateString = "" + date.getHours() + ":" + date.getMinutes() + " " + date.getMonth() + "/" + date.getDay() + "/" + (date.getYear() + 1900);
 			ScoreHistoryFile.addScore(currentThrower.getNick(), dateString, new Integer(cumulScores[bowlIndex][9]).toString());
 		} catch (Exception e) {System.err.println("Exception in addScore. "+ e );}
+	}
+
+	/** gameOver()
+	 *
+	 * After the last bowler bowls frame 10, prompt for
+	 * whether the party will play another round
+	 */
+	private void gameOver() {
+		// The game has finished; prompt if the bowlers wish to play again
+		int result = endGamePrompt();
+
+		// TODO: send record of scores to control desk
+		if (result == 1) {					// yes, want to play again
+			playAgain();
+		} else if (result == 2) {// no, dont want to play another game
+			endLane();
+		}
 	}
 
 	/** endGamePrompt()
