@@ -155,33 +155,73 @@ public class AddPartyView implements ActionListener, ListSelectionListener {
 
 	}
 
+	/** actionPerformed()
+	 *
+	 * Event that's triggered whenever an AddPartyView button is pressed.
+	 * Calls the action of its associated button.
+	 *
+	 * @param e Button click event
+	 */
 	public void actionPerformed(ActionEvent e) {
+		// Re-route event to its associated button's action
 		if (e.getSource().equals(addPatron)) {
-			if (selectedNick != null && party.size() < maxSize) {
-				if (party.contains(selectedNick)) {
-					System.err.println("Member already in Party");
-				} else {
-					party.add(selectedNick);
-					partyList.setListData(party);
-				}
-			}
+			buttonActionAddPatron();
 		}
 		if (e.getSource().equals(remPatron)) {
-			if (selectedMember != null) {
-				party.removeElement(selectedMember);
+			buttonActionRemPatron();
+		}
+		if (e.getSource().equals(newPatron)) {
+			buttonActionNewPatron();
+		}
+		if (e.getSource().equals(finished)) {
+			buttonActionFinished();
+		}
+
+	}
+
+	/** buttonActionAddPatron()
+	 *
+	 * Add a patron to the party, under the right conditions.
+	 */
+	private void buttonActionAddPatron() {
+		if (selectedNick != null && party.size() < maxSize) {
+			if (party.contains(selectedNick)) {
+				System.err.println("Member already in Party");
+			} else {
+				party.add(selectedNick);
 				partyList.setListData(party);
 			}
 		}
-		if (e.getSource().equals(newPatron)) {
-			NewPatronView newPatron = new NewPatronView( this );
-		}
-		if (e.getSource().equals(finished)) {
-			if ( party != null && party.size() > 0) {
-				controlDesk.updateAddParty( this );
-			}
-			win.hide();
-		}
+	}
 
+	/** buttonActionRemPatron()
+	 *
+	 * Remove the party member from this party.
+	 */
+	private void buttonActionRemPatron() {
+		if (selectedMember != null) {
+			party.removeElement(selectedMember);
+			partyList.setListData(party);
+		}
+	}
+
+	/** buttonActionNewPatron()
+	 *
+	 * Create a view for registering a new bowler.
+	 */
+	private void buttonActionNewPatron() {
+		NewPatronView newPatron = new NewPatronView( this );
+	}
+
+	/** buttonActionFinished()
+	 *
+	 * Finalize the party of bowlers.
+	 */
+	private void buttonActionFinished() {
+		if ( party != null && party.size() > 0) {
+			controlDesk.updateAddParty( this );
+		}
+		win.hide();
 	}
 
 /**
