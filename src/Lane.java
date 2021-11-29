@@ -425,8 +425,8 @@ public class Lane extends Thread implements PinsetterObserver {
 	 * @post scoring system is initialized
 	 */
 	private void resetScores() {
+		// Reset the scores HashMap variable
 		Iterator bowlIt = (party.getMembers()).iterator();
-
 		while ( bowlIt.hasNext() ) {
 			int[] toPut = new int[25];
 			for ( int i = 0; i != 25; i++){
@@ -435,7 +435,12 @@ public class Lane extends Thread implements PinsetterObserver {
 			scores.put( bowlIt.next(), toPut );
 		}
 		
-		
+		// Reset the cumulScores int[][] variable
+		for(int i = 0; i < cumulScores.length; i++) {
+			for(int j = 0; j < cumulScores[i].length; j++) {
+				cumulScores[i][j] = 0;
+			}
+		}
 		
 		gameFinished = false;
 		frameNumber = 0;

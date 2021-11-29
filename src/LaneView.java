@@ -5,6 +5,7 @@
 
 import java.awt.*;
 import java.awt.event.*;
+import javax.naming.OperationNotSupportedException;
 import javax.swing.*;
 import java.util.*;
 
@@ -160,43 +161,88 @@ public class LaneView implements LaneObserver, ActionListener {
 
 			}
 
-			int[][] lescores = le.getCumulScore();
-			for (int k = 0; k < numBowlers; k++) {
-				for (int i = 0; i <= le.getFrameNum() - 1; i++) {
-					if (lescores[k][i] != 0)
-						scoreLabel[k][i].setText(
-							(new Integer(lescores[k][i])).toString());
-				}
-				for (int i = 0; i < 21; i++) {
-					if (((int[]) ((HashMap) le.getScore())
-						.get(bowlers.get(k)))[i]
-						!= -1)
-						if (((int[]) ((HashMap) le.getScore())
-							.get(bowlers.get(k)))[i]
-							== 10
-							&& (i % 2 == 0 || i == 19))
-							ballLabel[k][i].setText("X");
-						else if (
-							i > 0
-								&& ((int[]) ((HashMap) le.getScore())
-									.get(bowlers.get(k)))[i]
-									+ ((int[]) ((HashMap) le.getScore())
-										.get(bowlers.get(k)))[i
-									- 1]
-									== 10
-								&& i % 2 == 1)
-							ballLabel[k][i].setText("/");
-						else if ( ((int[])((HashMap) le.getScore()).get(bowlers.get(k)))[i] == -2 ){
-							
-							ballLabel[k][i].setText("F");
-						} else
-							ballLabel[k][i].setText(
-								(new Integer(((int[]) ((HashMap) le.getScore())
-									.get(bowlers.get(k)))[i]))
-									.toString());
-				}
+			// Get the frame scores from the LaneEvent
+			int[][] leCumulScores = le.getCumulScore();
+
+			// Get the ball scores from the LaneEvent
+			int[][] leBallScores = new int[bowlers.size()][];
+			for(int i = 0; i < bowlers.size(); i++) {
+				// Convert the event's hashmap into integer arrays
+				leBallScores[i] = (int[])(le.getScore().get(bowlers.get(i)));
 			}
 
+			// Update all numberic scorecard labels
+			calcAllScorecardLabels(leCumulScores, leBallScores);
+		}
+	}
+
+	/** calcAllScorecardLabels()
+	 *
+	 * Update the cumulative and ball scores for all bowlers
+	 *
+	 * @param leCumulScores 2D array of cumulative frame scores for all bowlers
+	 * @param leBallScores 2D array of individual ball scores for all bowlers
+	 */
+	public void calcAllScorecardLabels(int[][] leCumulScores, int[][] leBallScores) {
+		// Calculate all values for each bowler
+		for (int k = 0; k < leCumulScores.length; k++) {
+			// For this bowler, update the labels for each frame's score
+			updateBowlerFrameLabels(leCumulScores[k], k);
+
+			// For this bowler, update the ball score labels
+			updateBowlerBallLabels(leBallScores[k], k);
+		}
+	}
+
+	/** updateBowlerFrameLabels()
+	 *
+	 * Update the JFrame variable for a given bowler
+	 * to match their associated score sheet
+	 *
+	 * @param bowlerFrameScores Cumulative scores for the associated bowler
+	 * @param bowlIndex Index of the target bowler for updating scoreLabel
+	 */
+	private void updateBowlerFrameLabels(int[] bowlerFrameScores, int bowlIndex) {
+		for (int i = 0; i < 10; i++) {
+			if (bowlerFrameScores[i] != 0)
+				scoreLabel[bowlIndex][i].setText("" + bowlerFrameScores[i]);
+			else
+				scoreLabel[bowlIndex][i].setText(" ");
+		}
+	}
+
+	/** updateBowlerBallLabels()
+	 *
+	 * For the indexed bowler, update the JFrame variable
+	 * to display the bowler's individual throws
+	 *
+	 * @param bowlerBallScores Individual throw scores for the associated bowler
+	 * @param bowlIndex Index of the target bowler for updating ballLabel
+	 */
+	private void updateBowlerBallLabels(int[] bowlerBallScores, int bowlIndex) {
+		// Update the label for all 10 frames (2 balls per frame, +1 for frame 3)
+		for (int i = 0; i < 21; i++) {
+			// If the ball hasn't been thrown, display an empty cell
+			if(bowlerBallScores[i] == -1) {
+				ballLabel[bowlIndex][i].setText(" ");
+				continue;
+			}
+
+			// First half (or third for frame 10)
+			// Either a strike or normal number
+			if(i % 2 == 0) {
+				if(bowlerBallScores[i] == 10)
+					ballLabel[bowlIndex][i].setText("X");
+				else
+					ballLabel[bowlIndex][i].setText("" + bowlerBallScores[i]);
+			}
+			// Second half; either a spare or normal number
+			else {
+				if(bowlerBallScores[i] + bowlerBallScores[i - 1] == 10)
+					ballLabel[bowlIndex][i].setText("/");
+				else
+					ballLabel[bowlIndex][i].setText("" + bowlerBallScores[i]);
+			}
 		}
 	}
 
