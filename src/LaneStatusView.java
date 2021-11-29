@@ -101,34 +101,71 @@ public class LaneStatusView implements ActionListener, LaneObserver, PinsetterOb
 		return jp;
 	}
 
+	/** actionPerformed()
+	 *
+	 * Event that's triggered whenever a LaneStatusView button is pressed.
+	 * Calls the action of its associated button.
+	 *
+	 * @param e Button click event
+	 */
 	public void actionPerformed( ActionEvent e ) {
-		if ( lane.isPartyAssigned() ) { 
-			if (e.getSource().equals(viewPinSetter)) {
-				if ( psShowing == false ) {
-					psv.show();
-					psShowing=true;
-				} else if ( psShowing == true ) {
-					psv.hide();
-					psShowing=false;
-				}
-			}
+		if (e.getSource().equals(viewPinSetter)) {
+			buttonActionViewPinSetter();
 		}
 		if (e.getSource().equals(viewLane)) {
-			if ( lane.isPartyAssigned() ) { 
-				if ( laneShowing == false ) {
-					lv.show();
-					laneShowing=true;
-				} else if ( laneShowing == true ) {
-					lv.hide();
-					laneShowing=false;
-				}
-			}
+			buttonActionViewLane();
 		}
 		if (e.getSource().equals(maintenance)) {
-			if ( lane.isPartyAssigned() ) {
-				lane.unPauseGame();
-				maintenance.setBackground( Color.GREEN );
+			buttonActionMaintenance();
+		}
+	}
+
+	/** buttonActionViewPinSetter()
+	 *
+	 * Toggle the visibility of the pin setter for this lane.
+	 *
+	 * @pre: A party is present in this lane
+	 */
+	private void buttonActionViewPinSetter() {
+		if ( lane.isPartyAssigned() ) {
+			if (psShowing == false) {
+				psv.show();
+				psShowing = true;
+			} else {
+				psv.hide();
+				psShowing = false;
 			}
+		}
+	}
+
+	/** buttonActionViewLane()
+	 *
+	 * View the scoreboard of the lane.
+	 *
+	 * @pre: A party is present in this lane
+	 */
+	private void buttonActionViewLane() {
+		if ( lane.isPartyAssigned() ) {
+			if ( laneShowing == false ) {
+				lv.show();
+				laneShowing=true;
+			} else if ( laneShowing == true ) {
+				lv.hide();
+				laneShowing=false;
+			}
+		}
+	}
+
+	/** buttonActionMaintenance()
+	 *
+	 * Flag the lane's call for maintenance as resolved.
+	 *
+	 * @pre: A party is present in this lane
+	 */
+	private void buttonActionMaintenance() {
+		if ( lane.isPartyAssigned() ) {
+			lane.unPauseGame();
+			maintenance.setBackground( Color.GREEN );
 		}
 	}
 
